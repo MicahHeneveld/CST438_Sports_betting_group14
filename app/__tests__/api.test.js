@@ -1,4 +1,4 @@
-import { apiCall } from '../apiScripts.js';
+import { apiCall } from '../../ApiScripts.js';
 
 //Mock The fetch request
 // https://jestjs.io/docs/mock-function-api

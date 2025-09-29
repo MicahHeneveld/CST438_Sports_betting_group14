@@ -1,4 +1,5 @@
 import * as SQLite from 'expo-sqlite';
+import { Platform } from 'react-native';
 
 let db; // Declare db variable
 
@@ -8,6 +9,12 @@ let db; // Declare db variable
 // Willing to separate out again
 // Initialize database and create tables
 export async function initializeDatabase() {
+    // Skip database initialization on web platform
+    if (Platform.OS === 'web') {
+        console.log('Database not supported on web platform');
+        return;
+    }
+    
     // Prevent opening the database multiple times (THIS WAS A PROBLEM)
     if (!db) {
         db = await SQLite.openDatabaseAsync('database.db');
@@ -189,7 +196,10 @@ export async function getUserID(username) {
 }
 
 // Call initializeDatabase() when app is loaded
-initializeDatabase();
+// Only initialize on mobile platforms, not web
+if (Platform.OS !== 'web') {
+    initializeDatabase();
+}
 
 // -------------------------------- userTableFunctions END ------------------------------------------
 
@@ -273,6 +283,11 @@ export async function getFavTeamNames(username) {
 
 // Get all favorite team information of a user
 export async function getAllFavTeamInfo(username) {
+    // Return empty array on web platform
+    if (Platform.OS === 'web') {
+        return [];
+    }
+    
     const team_ids = await getFavTeamID(username);
     let teamInfo = [];
 
