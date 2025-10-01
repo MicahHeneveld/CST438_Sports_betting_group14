@@ -9,15 +9,11 @@ let db; // Declare db variable
 // Willing to separate out again
 // Initialize database and create tables
 export async function initializeDatabase() {
-    // Skip database initialization on web platform
-    if (Platform.OS === 'web') {
-        console.log('Database not supported on web platform');
-        return;
-    }
-    
     // Prevent opening the database multiple times (THIS WAS A PROBLEM)
     if (!db) {
-        db = await SQLite.openDatabaseAsync('database.db');
+        // Use different database names for different platforms
+        const databaseName = Platform.OS === 'web' ? 'database' : 'database.db';
+        db = await SQLite.openDatabaseAsync(databaseName);
 
         // This part can be commented out. Was to test to see if users were being added
         // SQLite extension can't see the contents of a database stored on the emulator in react
@@ -196,10 +192,7 @@ export async function getUserID(username) {
 }
 
 // Call initializeDatabase() when app is loaded
-// Only initialize on mobile platforms, not web
-if (Platform.OS !== 'web') {
-    initializeDatabase();
-}
+initializeDatabase();
 
 // -------------------------------- userTableFunctions END ------------------------------------------
 
@@ -283,11 +276,6 @@ export async function getFavTeamNames(username) {
 
 // Get all favorite team information of a user
 export async function getAllFavTeamInfo(username) {
-    // Return empty array on web platform
-    if (Platform.OS === 'web') {
-        return [];
-    }
-    
     const team_ids = await getFavTeamID(username);
     let teamInfo = [];
 
