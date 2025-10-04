@@ -10,17 +10,19 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
-import { RootStackParamList } from "../navigation/types";
+//import { RootStackParamList } from "../navigation/types";
 import loginPic from "../../assets/images/loginPic2.jpg";
+
 import { verifyUserLogin, getUserID, initializeDatabase } from "../../database/db";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router } from "expo-router";
 
 export default function LoginScreen() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [dbInitialized, setDbInitialized] = useState(false);
-  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  //const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
   useEffect(() => {
     const initializeDb = async () => {
@@ -57,7 +59,8 @@ export default function LoginScreen() {
           Alert.alert("Welcome", "You are now logged in!");
 
           setTimeout(() => {
-            navigation.navigate("favoriteTeams", { username }); // Pass username via favoriteTeams
+            //navigation.navigate("favoriteTeams", { username }); // Pass username via favoriteTeams
+            router.push({ pathname: "/favoriteTeams", params: { username } });
           }, 500);
         } else {
           Alert.alert("Error", "User not found.");

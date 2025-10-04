@@ -2,20 +2,21 @@ import React, { useEffect } from "react";
 import { View, StyleSheet, Dimensions, Alert } from "react-native";
 import { Image } from "expo-image";
 import Button from "@/components/Button";
-import { useNavigation } from "@react-navigation/native";
-import { StackNavigationProp } from "@react-navigation/stack";
-import { RootStackParamList } from "../navagation/types"; // Import navigation types
+//import { useNavigation } from "@react-navigation/native";
+//import { StackNavigationProp } from "@react-navigation/stack";
+//import { RootStackParamList } from "../navagation/types"; // Import navigation types
 import loginPicture from "../../assets/images/loginPic.jpg";
 import {initializeDatabase, getAllTeams } from "../../database/db";
+import { router } from "expo-router";
 
 // Define the type for the navigation prop
-type IndexScreenNavigationProp = StackNavigationProp<
-  RootStackParamList,
-  "Home"
->;
+//type IndexScreenNavigationProp = StackNavigationProp<
+  //RootStackParamList,
+  //"Home"
+//>;
 
 const Index = () => {
-  const navigation = useNavigation<IndexScreenNavigationProp>(); // Use the typed navigation hook
+  //const navigation = useNavigation<IndexScreenNavigationProp>(); // Use the typed navigation hook
 
   useEffect(() => {
     // Initialize the database and create tables when the component mounts
@@ -52,12 +53,14 @@ const Index = () => {
 
   // Function to navigate to the login screen
   const handleLogin = () => {
-    navigation.navigate("login"); // Navigate to the Login screen
+    //navigation.navigate("login"); // Navigate to the Login screen
+    router.push("/login");
   };
 
   // Function to navigate to the account creation screen
   const handleCreateAccount = () => {
-    navigation.navigate("AccountCreation"); // Navigate to the CreateAccount screen
+    //navigation.navigate("AccountCreation"); // Navigate to the CreateAccount screen
+    router.push("/AccountCreation");
   };
 
   return (
@@ -66,8 +69,7 @@ const Index = () => {
         <Image source={loginPicture} style={styles.image} resizeMode="cover" />
       </View>
       <View style={styles.footerContainer}>
-        <Button theme="primary" label="Login" onPress={handleLogin} />{" "}
-        {/* Add onPress to navigate */}
+        <Button theme="primary" label="Login" onPress={handleLogin} />
         <Button label="Create Account" onPress={handleCreateAccount} />
       </View>
     </View>

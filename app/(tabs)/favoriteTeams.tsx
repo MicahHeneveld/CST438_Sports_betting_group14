@@ -9,14 +9,15 @@ import {
   Image,
 } from "react-native";
 import { callTeams } from "../ApiScripts";
-import { useRoute, RouteProp } from "@react-navigation/native";
-import { RootStackParamList } from "../navagation/types";
+//import { useRoute, RouteProp } from "@react-navigation/native";
+//import { RootStackParamList } from "../navagation/types";
 import {
   addTeamToFavs,
   removeTeamFromFav,
   getFavTeamNames,
   logDatabaseContents,
 } from "../../database/db";
+import { useLocalSearchParams } from "expo-router";
 
 interface Team {
   id: string;
@@ -26,8 +27,9 @@ interface Team {
 }
 
 const FavoriteTeams = () => {
-  const route = useRoute<RouteProp<RootStackParamList, "favoriteTeams">>();
-  const username = route.params?.username; // Get username from navigation params
+  //const route = useRoute<RouteProp<RootStackParamList, "favoriteTeams">>();
+  //const username = route.params?.username; // Get username from navigation params
+  const { username } = useLocalSearchParams<{ username: string }>();
   const [teams, setTeams] = useState<Team[]>([]);
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(true);

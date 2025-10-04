@@ -9,10 +9,11 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { callGamesByDate } from "../ApiScripts";
-import { useNavigation, NavigationProp } from "@react-navigation/native";
-import { RootStackParamList } from "../navagation/types";
+//import { useNavigation, NavigationProp } from "@react-navigation/native";
+//import { RootStackParamList } from "../navagation/types";
 import { getAllFavTeamInfo, logDatabaseContents } from "../../database/db";
-import { useFocusEffect } from "@react-navigation/native";
+//import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect } from "expo-router";
 
 interface Game {
   id: string;
@@ -22,7 +23,7 @@ interface Game {
 }
 
 const UpcomingGames = () => {
-  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  //const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [userName, setUserName] = useState<string | null>(null);
