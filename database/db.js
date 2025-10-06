@@ -1,4 +1,5 @@
 import * as SQLite from 'expo-sqlite';
+import { Platform } from 'react-native';
 
 let db; // Declare db variable
 
@@ -10,7 +11,9 @@ let db; // Declare db variable
 export async function initializeDatabase() {
     // Prevent opening the database multiple times (THIS WAS A PROBLEM)
     if (!db) {
-        db = await SQLite.openDatabaseAsync('database.db');
+        // Use different database names for different platforms
+        const databaseName = Platform.OS === 'web' ? 'database' : 'database.db';
+        db = await SQLite.openDatabaseAsync(databaseName);
 
         // This part can be commented out. Was to test to see if users were being added
         // SQLite extension can't see the contents of a database stored on the emulator in react
