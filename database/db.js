@@ -1,18 +1,25 @@
-import * as SQLite from 'expo-sqlite';
 import { Platform } from 'react-native';
 
 let db; // Declare db variable
+let SQLite; // Will be loaded dynamically
 
-// Reference Documentation = https://docs.expo.dev/versions/latest/sdk/sqlite/
-
-// I was having issues when all the files were separated so I put everything in one
-// Willing to separate out again
 // Initialize database and create tables
 export async function initializeDatabase() {
+    // Skip database initialization on web platform due to known WASM issues in Expo SDK 54
+    if (Platform.OS === 'web') {
+        console.log('Database initialization skipped on web platform (known Expo SDK 54 WASM issue)');
+        return;
+    }
+    
+    // Dynamically import SQLite only on non-web platforms to avoid static import issues
+    if (!SQLite) {
+        const SQLiteModule = await import('expo-sqlite');
+        SQLite = SQLiteModule.default || SQLiteModule;
+    }
+    
     // Prevent opening the database multiple times (THIS WAS A PROBLEM)
     if (!db) {
-        // Use different database names for different platforms
-        const databaseName = Platform.OS === 'web' ? 'database' : 'database.db';
+        const databaseName = 'database.db';
         db = await SQLite.openDatabaseAsync(databaseName);
 
         // This part can be commented out. Was to test to see if users were being added
