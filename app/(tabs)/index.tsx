@@ -5,7 +5,6 @@ import Button from "@/components/Button";
 //import { useNavigation } from "@react-navigation/native";
 //import { StackNavigationProp } from "@react-navigation/stack";
 //import { RootStackParamList } from "../../navagation/types"; // Import navigation types
-import loginPicture from "../../assets/images/loginPic.jpg";
 import {initializeDatabase, getAllTeams } from "../../database/db";
 import { router } from "expo-router";
 
@@ -66,7 +65,7 @@ const Index = () => {
   return (
     <View style={styles.container}>
       <View style={styles.imageContainer}>
-        <Image source={loginPicture} style={styles.image} contentFit="cover" />
+        <Image source={require("../../assets/images/loginPic.jpg")} style={styles.image} contentFit="cover" />
       </View>
       <View style={styles.footerContainer}>
         <Button theme="primary" label="Login" onPress={handleLogin} />
