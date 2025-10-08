@@ -55,3 +55,18 @@ Your Heroku backend should implement these endpoints:
 - `GET /teams` - Get all teams
 
 This architecture solves the SQLite/WASM compatibility issues and makes the app deployment-ready for Heroku.
+
+###Heroku/JawsDB setup
+
+==USE WHEN BUILDING THE API==
+JAWSDB_URL: mysql://xnho8lw1tvhttapm:v7d9gws99qktv5yw@gzp0u91edhmxszwf.cbetxkdyhwsb.us-east-1.rds.amazonaws.com:3306/na9t89qhy0p328pc
+== ==
+
+***Connection Details*** 
+Host	gzp0u91edhmxszwf.cbetxkdyhwsb.us-east-1.rds.amazonaws.com	
+Username	xnho8lw1tvhttapm	
+Password	v7d9gws99qktv5yw	
+Port	3306	
+Database	na9t89qhy0p328pc
+
+- This database is only for the API backend.
