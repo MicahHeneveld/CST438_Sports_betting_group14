@@ -53,7 +53,7 @@ const UpcomingGames = () => {
 
       // Fetch favorite teams directly from the database using the username
       const favTeams = await getAllFavTeamInfo(userName);
-      const favTeamNames = favTeams.map((team) => team[0]);
+      const favTeamNames = favTeams.map((team: any) => team[0]);
       if (favTeamNames.length === 0) {
         console.warn("No favorite teams found.");
         setGames([]);
