@@ -10,7 +10,8 @@ import {
 } from "react-native";
 import { insertUser, isUsernameAvailable } from "../database/db"; // Import database functions
 import accountPic from "../assets/images/accountCreationPic.jpg"; // Your background image
-import { useNavigation } from "@react-navigation/native"; // Import the useNavigation hook
+//import { useNavigation } from "@react-navigation/native"; // Import the useNavigation hook
+import { router } from "expo-router";
 
 const AccountCreation = () => {
   // State to store the values of the form fields
@@ -19,7 +20,8 @@ const AccountCreation = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  const navigation = useNavigation(); // Access the navigation object
+  //const navigation = useNavigation(); // Access the navigation object
+  //router.push("/(tabs)/login");
 
   // Handle account creation logic
   const handleCreateAccount = async () => {
@@ -48,8 +50,9 @@ const AccountCreation = () => {
       Alert.alert("Account Created", `Welcome, ${username}!`);
 
       // After successful account creation, navigate to the Login screen
-      navigation.navigate("Login");
-
+      //navigation.navigate("Login");
+      router.push("/(tabs)/login");
+      
       // Reset form fields (optional)
       setUsername("");
       setEmail("");
@@ -108,7 +111,8 @@ const AccountCreation = () => {
           <Text>Already have an account? </Text>
           <Button
             title="Login"
-            onPress={() => navigation.navigate("Login")} // Navigate to the Login screen
+            //onPress={() => navigation.navigate("Login")} // Navigate to the Login screen
+            onPress={() => router.push("/(tabs)/login")}
           />
         </View>
       </View>

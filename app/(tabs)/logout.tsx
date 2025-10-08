@@ -1,15 +1,16 @@
 import React from "react";
 import { View, Text, Button, StyleSheet } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useNavigation } from "@react-navigation/native";
-import { StackNavigationProp } from "@react-navigation/stack";
-import { RootStackParamList } from "../navagation/types";
+//import { useNavigation } from "@react-navigation/native";
+//import { StackNavigationProp } from "@react-navigation/stack";
+//import { RootStackParamList } from "../navagation/types";
+import { router } from "expo-router";
 
 // Define the type for navigation in LogoutScreen
-type LogoutScreenNavigationProp = StackNavigationProp<RootStackParamList, "Logout">;
+//type LogoutScreenNavigationProp = StackNavigationProp<RootStackParamList, "Logout">;
 
 const LogoutScreen = () => {
-  const navigation = useNavigation<LogoutScreenNavigationProp>();
+  //const navigation = useNavigation<LogoutScreenNavigationProp>();
 
   const handleLogout = async () => {
     try {
@@ -17,7 +18,8 @@ const LogoutScreen = () => {
       console.log("AsyncStorage cleared");
 
       // Navigate to Home screen after logout (ok for some reason u have to go to file name not component name)
-      navigation.navigate("index");
+      //navigation.navigate("index");
+      router.replace("/(tabs)");
     } catch (error) {
       console.error("Error clearing AsyncStorage:", error);
     }
