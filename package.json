@@ -12,6 +12,8 @@
     "lint": "expo lint",
     "demo": "node demo-presentation/presentation-controller.js",
     "demo:auto": "npx playwright test demo-presentation/demo.spec.js --project=chromium --headed",
+    "demo:signup": "npx playwright test e2e-tests/live-signup-demo.spec.js --project=chromium --headed",
+    "demo:signup-full": "npx playwright test e2e-tests/full-signup-demo.spec.js --project=chromium --headed",
     "demo:interactive": "npx playwright test demo-presentation/demo.spec.js --project=chromium --headed --grep \"Interactive\"",
     "demo:screenshots": "npx playwright test demo-presentation/demo.spec.js --project=chromium --reporter=null",
     "e2e": "npx playwright test e2e-tests/ --headed",
