@@ -9,7 +9,13 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "test": "jest --watchAll",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "demo": "node demo-presentation/presentation-controller.js",
+    "demo:auto": "npx playwright test demo-presentation/demo.spec.js --project=chromium --headed",
+    "demo:interactive": "npx playwright test demo-presentation/demo.spec.js --project=chromium --headed --grep \"Interactive\"",
+    "demo:screenshots": "npx playwright test demo-presentation/demo.spec.js --project=chromium --reporter=null",
+    "e2e": "npx playwright test e2e-tests/ --headed",
+    "e2e:headless": "npx playwright test e2e-tests/"
   },
   "jest": {
     "preset": "jest-expo"
@@ -53,6 +59,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
+    "@playwright/test": "^1.56.0",
     "@types/jest": "^29.5.12",
     "@types/react": "~19.1.10",
     "@types/react-test-renderer": "^18.3.0",
