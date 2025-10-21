@@ -1,10 +1,13 @@
+// heroku backend API URL
+const API_BASE_URL = 'https://jump-ball-df460ee69b61.herokuapp.com/api';
+
+
 export const apiCall = async (endpoint) => {
   try {
-    const response = await fetch(endpoint, {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, { 
       method: "GET",
       headers: {
-        "x-rapidapi-key": "f48a5921f5msh580809ba8c9e6cfp181a8ajsn545d715d6844",
-        "x-rapidapi-host": "api-nba-v1.p.rapidapi.com",
+        "Content-Type": "application/json", 
       },
     });
     const json = await response.json();
@@ -16,20 +19,14 @@ export const apiCall = async (endpoint) => {
 };
 export const callTeams = async () => {
   try {
-    const json = await apiCall(
-      "https://api-nba-v1.p.rapidapi.com/teams?league=standard"
-    );
-    if (!json || !json.response) {
+    const json = await apiCall("/teams/all");
+    
+    if (!json || json.length === 0) {
       throw new Error("Invalid API response");
     }
-    // Create the teamData array with below structure
-    const teamData = json.response
-      // I want to filter out teams that aren't nbaFranchises (you would think I could use the league filter, but it isn't an option)
-      // I want to check the nbaFranchise field and return a new array populated only with teams where this field is true
-      // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/filter
-      .filter((team) => team.nbaFranchise === true)
-      // I also want to sort out specific information.
-      // This may change depending on what we need. For now, it will map out the fields we use in our table
+    // the data we want to show. this was the project's owner was using last semester.
+    //  I'm just doing the same thing
+    const teamData = json  
       .map((team) => ({
         id: team.id,
         name: team.name,
@@ -37,13 +34,38 @@ export const callTeams = async () => {
         logo: team.logo,
       }));
 
-    //console.log("teamData:", teamData);
     return teamData;
   } catch (error) {
     console.error("Error fetching teams:", error);
     return [];
   }
 };
+
+export const getGamesByTeams= async () => {
+  try {
+    const json = await apiCall("/games/teams/all");
+    
+    if (!json || json.length === 0) {
+      throw new Error("Invalid API response");
+    }
+    // the data we want to show. this was the project's owner was using last semester.
+    //  I'm just doing the same thing
+    const teamData = json  
+      .map((team) => ({
+        id: team.id,
+        name: team.name,
+        nickname: team.nickname,
+        logo: team.logo,
+      }));
+
+    return teamData;
+  } catch (error) {
+    console.error("Error fetching teams:", error);
+    return [];
+  }
+};
+
+
 export const callGamesByDate = async (startDate, endDate, teamID) => {
   try {
     const json = await apiCall(
