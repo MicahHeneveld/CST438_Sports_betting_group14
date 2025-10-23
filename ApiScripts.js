@@ -1,22 +1,46 @@
 // heroku backend API URL
 const API_BASE_URL = 'https://jump-ball-df460ee69b61.herokuapp.com/api';
 
-
 export const apiCall = async (endpoint) => {
   try {
+    console.log("Calling:", `${API_BASE_URL}${endpoint}`);  
+    
     const response = await fetch(`${API_BASE_URL}${endpoint}`, { 
       method: "GET",
       headers: {
         "Content-Type": "application/json", 
       },
+       credentials: "include", // send cookies if needed
     });
+    
+    console.log("Response status:", response.status); 
+    
+  
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+
+    const contentType = response.headers.get("content-type");
+    console.log("Content-Type:", contentType);  
+    
+    if (!contentType || !contentType.includes("application/json")) {
+      const text = await response.text();
+      console.error("Response is not JSON:", text.substring(0, 200));
+      throw new Error("Response is not JSON");
+    }
+    
     const json = await response.json();
+    console.log("Successfully parsed JSON, data length:", json.length); 
     return json;
   } catch (error) {
-    console.error(error);
+    console.error("API Call Error:", error);
     return null;
   }
 };
+
+
+// all teams from backend
 export const callTeams = async () => {
   try {
     const json = await apiCall("/teams/all");
@@ -24,8 +48,7 @@ export const callTeams = async () => {
     if (!json || json.length === 0) {
       throw new Error("Invalid API response");
     }
-    // the data we want to show. this was the project's owner was using last semester.
-    //  I'm just doing the same thing
+
     const teamData = json  
       .map((team) => ({
         id: team.id,
@@ -34,6 +57,7 @@ export const callTeams = async () => {
         logo: team.logo,
       }));
 
+    console.log("Returning team data, count:", teamData.length);  
     return teamData;
   } catch (error) {
     console.error("Error fetching teams:", error);
@@ -41,15 +65,15 @@ export const callTeams = async () => {
   }
 };
 
-export const getGamesByTeams= async () => {
+//all games 
+export const getGamesByTeams = async () => {
   try {
-    const json = await apiCall("/games/teams/all");
+    const json = await apiCall("/games/all");
     
     if (!json || json.length === 0) {
       throw new Error("Invalid API response");
     }
-    // the data we want to show. this was the project's owner was using last semester.
-    //  I'm just doing the same thing
+
     const teamData = json  
       .map((team) => ({
         id: team.id,
@@ -65,43 +89,29 @@ export const getGamesByTeams= async () => {
   }
 };
 
-
 export const callGamesByDate = async (startDate, endDate, teamID) => {
   try {
-    const json = await apiCall(
-      `https://api-nba-v1.p.rapidapi.com/games?league=standard&season=2024&team=${teamID}`
-    );
-    if (!json || !json.response) {
+    const json = await apiCall(`/games/team/${teamID}`);
+    
+    if (!json || json.length === 0) {
       throw new Error("Invalid API response");
     }
-    // Filter games based on the provided date range. It was a lot easier to filter out games outside the range
-    // than to select each date in the range and check.
-    // this also prevents having to check if there is a game on a specific date
-    const gameData = json.response
+
+    const gameData = json
       .filter((game) => {
-        const gameDate = new Date(game.date.start);
+        const gameDate = new Date(game.gameDateEst);  
         const start = new Date(startDate);
         const end = new Date(endDate);
         return gameDate >= start && gameDate <= end;
       })
-      // I think I could make call Teams redundant with this stuff at some point.
       .map((game) => ({
-        id: game.id,
-        date: new Date(game.date.start),
-        homeTeam: {
-          id: game.teams.home.id,
-          name: game.teams.home.name,
-          nickname: game.teams.home.nickname,
-          logo: game.teams.home.logo,
-        },
-        awayTeam: {
-          id: game.teams.visitors.id,
-          name: game.teams.visitors.name,
-          nickname: game.teams.visitors.nickname,
-          logo: game.teams.visitors.logo,
-        },
+        id: game.gameId,  
+        date: new Date(game.gameDateEst), 
+        homeTeamId: game.homeTeamId,  
+        awayTeamId: game.awayTeamId,
       }));
-    return gameData; // Return the filtered and mapped game data
+      
+    return gameData;
   } catch (error) {
     console.error("Error fetching games:", error);
     return [];
