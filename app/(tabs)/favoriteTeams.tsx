@@ -1,22 +1,7 @@
 import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-  ActivityIndicator,
-  Image,
-} from "react-native";
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Image } from "react-native";
 import { callTeams } from "../../ApiScripts";
-//import { useRoute, RouteProp } from "@react-navigation/native";
-//import { RootStackParamList } from "../../navagation/types";
-import {
-  addTeamToFavs,
-  removeTeamFromFav,
-  getFavTeamNames,
-  logDatabaseContents,
-} from "../../database/db";
+import { addTeamToFavs, removeTeamFromFav, getFavTeamNames, logDatabaseContents } from "../../database/db";
 import { useLocalSearchParams } from "expo-router";
 
 interface Team {
@@ -27,8 +12,6 @@ interface Team {
 }
 
 const FavoriteTeams = () => {
-  //const route = useRoute<RouteProp<RootStackParamList, "favoriteTeams">>();
-  //const username = route.params?.username; // Get username from navigation params
   const { username } = useLocalSearchParams<{ username: string }>();
   const [teams, setTeams] = useState<Team[]>([]);
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
@@ -36,46 +19,35 @@ const FavoriteTeams = () => {
 
   useEffect(() => {
     const initialize = async () => {
-      if (!username) {
-        console.error("No username received via navigation");
-        return;
-      }
+      if (!username) return;
 
       setLoading(true);
-
       try {
         const favTeams = await getFavTeamNames(username);
         setSelectedTeams(favTeams || []);
 
-        process.env.RAPIDAPI_KEY = "f48a5921f5msh580809ba8c9e6cfp181a8ajsn545d715d6844";
         const teamData = await callTeams();
-
-        if (teamData && teamData.length > 0) {
-          setTeams(teamData);
-        } else {
-          console.error("No teams received from API.");
-        }
+        setTeams(teamData || []);
       } catch (error) {
-        console.error("Error fetching teams:", error);
+        console.error("Error initializing Favorite Teams:", error);
       }
-
       setLoading(false);
     };
 
     initialize();
   }, [username]);
 
-  const toggleTeamSelection = async (team_name: string) => {
+  const toggleTeamSelection = async (teamName: string) => {
     if (!username) return;
 
     let updatedTeams = [...selectedTeams];
 
-    if (updatedTeams.includes(team_name)) {
-      await removeTeamFromFav(username, team_name);
-      updatedTeams = updatedTeams.filter((name) => name !== team_name);
+    if (updatedTeams.includes(teamName)) {
+      await removeTeamFromFav(username, teamName);
+      updatedTeams = updatedTeams.filter(name => name !== teamName);
     } else {
-      await addTeamToFavs(username, team_name);
-      updatedTeams.push(team_name);
+      await addTeamToFavs(username, teamName);
+      updatedTeams.push(teamName);
     }
 
     setSelectedTeams(updatedTeams);
@@ -94,13 +66,10 @@ const FavoriteTeams = () => {
       ) : (
         <FlatList
           data={teams}
-          keyExtractor={(item) => item.id}
+          keyExtractor={item => item.id}
           renderItem={({ item }) => (
             <TouchableOpacity
-              style={[
-                styles.teamItem,
-                selectedTeams.includes(item.name) ? styles.selectedTeam : {},
-              ]}
+              style={[styles.teamItem, selectedTeams.includes(item.name) ? styles.selectedTeam : {}]}
               onPress={() => toggleTeamSelection(item.name)}
             >
               <View style={styles.teamContainer}>
@@ -120,19 +89,8 @@ const styles = StyleSheet.create({
   title: { fontSize: 20, fontWeight: "bold", marginBottom: 10 },
   loader: { flex: 1, justifyContent: "center", alignItems: "center" },
   errorText: { fontSize: 16, color: "red", textAlign: "center" },
-  teamItem: {
-    padding: 15,
-    marginBottom: 5,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 5,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  teamContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
+  teamItem: { padding: 15, marginBottom: 5, borderWidth: 1, borderColor: "#ddd", borderRadius: 5, flexDirection: "row", alignItems: "center" },
+  teamContainer: { flexDirection: "row", alignItems: "center" },
   logo: { width: 40, height: 40, marginRight: 10, resizeMode: "contain" },
   selectedTeam: { backgroundColor: "#87CEFA" },
   teamText: { fontSize: 18 },
