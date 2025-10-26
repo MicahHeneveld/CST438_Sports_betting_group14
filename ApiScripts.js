@@ -5,13 +5,17 @@ import * as WebBrowser from 'expo-web-browser';
 WebBrowser.maybeCompleteAuthSession();
 
 // Backend API URLs
-const API_BASE_URL = 'https://jump-ball-df460ee69b61.herokuapp.com/api/public';
-const AUTH_BASE_URL = 'https://jump-ball-df460ee69b61.herokuapp.com';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://jump-ball-df460ee69b61.herokuapp.com/api';
+const AUTH_BASE_URL = process.env.EXPO_PUBLIC_API_URL?.replace('/api', '') || 'https://jump-ball-df460ee69b61.herokuapp.com';
+console.log('🔧 API_BASE_URL:', API_BASE_URL);
+console.log('🔧 AUTH_BASE_URL:', AUTH_BASE_URL);
 const SESSION_KEY = '@user_session';
 
 // OAuth redirect URI for mobile
 import * as Linking from 'expo-linking';
-const REDIRECT_URI = Linking.createURL('/oauth-callback');
+
+const REDIRECT_URI = Linking.createURL('login/oauth2/code/github');
+
 
 // Store user session data
 export const setSession = async (sessionData) => {
@@ -62,7 +66,7 @@ export const loginWithOAuth = async (provider = 'google') => {
 
     console.log('WebBrowser result:', result);
 
-    // Check if login succeeded
+ 
     if (result.type === 'success' && result.url) {
       // Extract token from URL
       const urlParams = new URLSearchParams(result.url.split('?')[1]);
@@ -170,7 +174,7 @@ export const apiCall = async (endpoint, options = {}) => {
       throw new Error('AUTHENTICATION_REQUIRED');
     }
 
-    // Handle other errors
+
     if (!response.ok) {
       throw new Error(`HTTP error: ${response.status}`);
     }
@@ -191,10 +195,9 @@ export const apiCall = async (endpoint, options = {}) => {
 // Get all teams
 export const callTeams = async () => {
   try {
-    const json = await apiCall('/teams/all');
+    const json = await apiCall('/teams'); 
     if (!json || json.length === 0) return [];
-    
-    // Map to consistent format
+
     return json.map((team) => ({
       id: team.id,
       name: team.name,
@@ -207,6 +210,23 @@ export const callTeams = async () => {
     return [];
   }
 };
+
+// Get a specific team by ID
+export const callTeamById = async (teamId) => {
+  try {
+    const team = await apiCall(`/teams/${teamId}`);
+    return {
+      id: team.id,
+      name: team.name,
+      nickname: team.nickname,
+      logo: team.logo,
+    };
+  } catch (error) {
+    console.error('Error fetching team:', error);
+    return null;
+  }
+};
+
 
 // Get all games
 export const getGamesByTeams = async () => {
@@ -230,27 +250,41 @@ export const getGamesByTeams = async () => {
   }
 };
 
-// Get games by team and date range
-export const callGamesByDate = async (startDate, endDate, teamID) => {
+// Get all games
+export const callGames = async () => {
   try {
-    const json = await apiCall(`/games/team/${teamID}`);
-    if (!json?.games?.length) return [];
-    
-    // Filter by date range
-    return json.games
-      .filter((game) => {
-        const date = new Date(game.gameDateEst);
-        return date >= new Date(startDate) && date <= new Date(endDate);
-      })
-      .map((game) => ({
-        id: game.gameId,
-        date: new Date(game.gameDateEst),
-        homeTeamId: game.homeTeamId,
-        awayTeamId: game.awayTeamId,
-      }));
+    const json = await apiCall('/games'); 
+    if (!json || json.length === 0) return [];
+
+    return json.map((game) => ({
+      id: game.id,
+      gameDate: game.gameDateEst,
+      homeTeamId: game.homeTeamId,
+      awayTeamId: game.awayTeamId,
+      homeTeamScore: game.homeTeamScore,
+      awayTeamScore: game.awayTeamScore,
+    }));
   } catch (error) {
     console.error('Error fetching games:', error);
     if (error.message === 'AUTHENTICATION_REQUIRED') throw error;
     return [];
+  }
+};
+
+// Get a specific game by ID
+export const callGameById = async (gameId) => {
+  try {
+    const game = await apiCall(`/games/${gameId}`);
+    return {
+      id: game.id,
+      gameDate: game.gameDateEst,
+      homeTeamId: game.homeTeamId,
+      awayTeamId: game.awayTeamId,
+      homeTeamScore: game.homeTeamScore,
+      awayTeamScore: game.awayTeamScore,
+    };
+  } catch (error) {
+    console.error('Error fetching game:', error);
+    return null;
   }
 };
