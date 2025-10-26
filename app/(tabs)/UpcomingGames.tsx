@@ -7,15 +7,17 @@ import {
   ActivityIndicator,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { callGamesByDate } from "../../ApiScripts";
+import { callGames } from "../../ApiScripts";
 import { getAllFavTeamInfo, logDatabaseContents } from "../../database/db";
 import { useFocusEffect } from "expo-router";
 
 interface Game {
   id: string;
-  date: Date;
+  gameDate: string;
   homeTeamId: number;  
   awayTeamId: number;
+  homeTeamScore: number;
+  awayTeamScore: number;
 }
 
 const UpcomingGames = () => {
@@ -31,7 +33,7 @@ const UpcomingGames = () => {
         setUserName(storedUserName);
         console.log("Fetched Username: ", storedUserName);
       } else {
-        console.warn(" No username found in AsyncStorage");
+        console.warn("⚠️ No username found in AsyncStorage");
       }
     };
     fetchUserName();
@@ -46,42 +48,40 @@ const UpcomingGames = () => {
       await logDatabaseContents();
 
       const favTeams = await getAllFavTeamInfo(userName);
-      const favTeamNames = favTeams.map((team: any) => team[0]);
-      if (favTeamNames.length === 0) {
+      const favTeamIds = favTeams.map((team: any) => team[0]);
+      if (favTeamIds.length === 0) {
         console.warn("No favorite teams found.");
         setGames([]);
         return;
       }
 
+      // Calculate date range (next 14 days)
       const currentDate = new Date();
       const endDate = new Date(currentDate);
       endDate.setDate(currentDate.getDate() + 14);
 
-      const startDateString = currentDate.toISOString().split("T")[0];
-      const endDateString = endDate.toISOString().split("T")[0];
+      console.log("Fetching all games and filtering...");
 
-      console.log("Fetching games from:", startDateString, "to:", endDateString);
- 
-      let allGames: Game[] = [];
-      for (const teamID of favTeamNames) {
-        console.log(`📡 Fetching games for team: ${teamID}`);
-        const teamGames = await callGamesByDate(
-          startDateString,
-          endDateString,
-          teamID
-        );
+      // Fetch all games from API
+      const allGames = await callGames();
 
-        if (teamGames.length === 0) {
-          console.warn(`No games found for team ${teamID}`);
-        } else {
-          allGames = [...allGames, ...teamGames];
-        }
+      const filteredGames = allGames.filter((game) => {
+        const gameDate = new Date(game.gameDate);
+        const isInDateRange = gameDate >= currentDate && gameDate <= endDate;
+        const isFavTeam = favTeamIds.includes(game.homeTeamId) || favTeamIds.includes(game.awayTeamId);
+        return isInDateRange && isFavTeam;
+      });
+
+      // Sort by date
+      filteredGames.sort((a, b) => new Date(a.gameDate).getTime() - new Date(b.gameDate).getTime());
+
+      if (filteredGames.length === 0) {
+        console.warn("No upcoming games found for favorite teams.");
+      } else {
+        console.log(`✅ Found ${filteredGames.length} upcoming games`);
       }
 
-      if (allGames.length === 0) {
-        console.warn("No upcoming games found.");
-      }
-      setGames(allGames);
+      setGames(filteredGames);
     } catch (error) {
       console.error("Error fetching games:", error);
     } finally {
@@ -95,7 +95,7 @@ const UpcomingGames = () => {
 
   useFocusEffect(
     useCallback(() => {
-      console.log("re-fetching games...");
+      console.log("🔄 re-fetching games...");
       fetchGames();
     }, [fetchGames])
   );
@@ -120,7 +120,7 @@ const UpcomingGames = () => {
                 Team {item.homeTeamId} vs Team {item.awayTeamId}
               </Text>
               <Text style={styles.dateText}>
-                {item.date.toLocaleDateString()}
+                {new Date(item.gameDate).toLocaleDateString()}
               </Text>
             </View>
           )}
