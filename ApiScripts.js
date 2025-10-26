@@ -195,7 +195,7 @@ export const apiCall = async (endpoint, options = {}) => {
 // Get all teams
 export const callTeams = async () => {
   try {
-    const json = await apiCall('/teams'); 
+    const json = await apiCall('/teams/all'); 
     if (!json || json.length === 0) return [];
 
     return json.map((team) => ({
@@ -206,45 +206,6 @@ export const callTeams = async () => {
     }));
   } catch (error) {
     console.error('Error fetching teams:', error);
-    if (error.message === 'AUTHENTICATION_REQUIRED') throw error;
-    return [];
-  }
-};
-
-// Get a specific team by ID
-export const callTeamById = async (teamId) => {
-  try {
-    const team = await apiCall(`/teams/${teamId}`);
-    return {
-      id: team.id,
-      name: team.name,
-      nickname: team.nickname,
-      logo: team.logo,
-    };
-  } catch (error) {
-    console.error('Error fetching team:', error);
-    return null;
-  }
-};
-
-
-// Get all games
-export const getGamesByTeams = async () => {
-  try {
-    const json = await apiCall('/games/all');
-    if (!json?.games?.length) return [];
-    
-    // Map games to consistent format
-    return json.games.map((game) => ({
-      id: game.id,
-      gameDate: game.gameDateEst,
-      homeTeamId: game.homeTeamId,
-      awayTeamId: game.awayTeamId,
-      homeTeamScore: game.homeTeamScore,
-      awayTeamScore: game.awayTeamScore,
-    }));
-  } catch (error) {
-    console.error('Error fetching games:', error);
     if (error.message === 'AUTHENTICATION_REQUIRED') throw error;
     return [];
   }
@@ -268,23 +229,5 @@ export const callGames = async () => {
     console.error('Error fetching games:', error);
     if (error.message === 'AUTHENTICATION_REQUIRED') throw error;
     return [];
-  }
-};
-
-// Get a specific game by ID
-export const callGameById = async (gameId) => {
-  try {
-    const game = await apiCall(`/games/${gameId}`);
-    return {
-      id: game.id,
-      gameDate: game.gameDateEst,
-      homeTeamId: game.homeTeamId,
-      awayTeamId: game.awayTeamId,
-      homeTeamScore: game.homeTeamScore,
-      awayTeamScore: game.awayTeamScore,
-    };
-  } catch (error) {
-    console.error('Error fetching game:', error);
-    return null;
   }
 };
