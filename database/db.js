@@ -1,40 +1,65 @@
 // JawsDB/Heroku API Database Layer
 // Ready for Heroku deployment with JawsDB MySQL
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Environment configuration - set EXPO_PUBLIC_API_URL in your .env
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://your-heroku-app.herokuapp.com/api';
+const API_BASE_URL =
+  process.env.EXPO_PUBLIC_API_URL ||
+  'https://jump-ball-df460ee69b61.herokuapp.com/api';
 
-// Simple HTTP client for JawsDB API calls
+// Simple HTTP client for JawsDB API calls with JWT support
 const apiClient = {
   baseURL: API_BASE_URL,
-  
+
   async get(endpoint) {
-    const response = await fetch(`${this.baseURL}${endpoint}`);
+    const token = await AsyncStorage.getItem('@access_token');
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+    console.log('[GET]', `${this.baseURL}${endpoint}`);
+    if (token) console.log('Using token (truncated):', token.substring(0, 25) + '...');
+
+    const response = await fetch(`${this.baseURL}${endpoint}`, { headers });
     if (!response.ok) throw new Error(`API Error: ${response.status}`);
     return response.json();
   },
-  
+
   async post(endpoint, data) {
+    const token = await AsyncStorage.getItem('@access_token');
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+
+    console.log('[POST]', `${this.baseURL}${endpoint}`);
     const response = await fetch(`${this.baseURL}${endpoint}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      headers,
+      body: JSON.stringify(data),
     });
+
     if (!response.ok) throw new Error(`API Error: ${response.status}`);
     return response.json();
   },
-  
+
   async delete(endpoint) {
-    const response = await fetch(`${this.baseURL}${endpoint}`, { method: 'DELETE' });
+    const token = await AsyncStorage.getItem('@access_token');
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+    console.log('[DELETE]', `${this.baseURL}${endpoint}`);
+    const response = await fetch(`${this.baseURL}${endpoint}`, {
+      method: 'DELETE',
+      headers,
+    });
+
     if (!response.ok) throw new Error(`API Error: ${response.status}`);
     return response.json();
-  }
+  },
 };
 
 // Database initialization - test API connection
 export async function initializeDatabase() {
   try {
-    await apiClient.get('/health');
+    await apiClient.get('/public/status');
     console.log('JawsDB API connected successfully');
   } catch (error) {
     console.log('API not available yet - using mock data');
@@ -42,7 +67,6 @@ export async function initializeDatabase() {
 }
 
 // ===== USER MANAGEMENT FUNCTIONS =====
-
 export async function insertUser(username, password) {
   try {
     return await apiClient.post('/users', { username, password });
@@ -84,10 +108,10 @@ export async function getUserID(username) {
 
 export async function updatePassword(username, oldPassword, newPassword) {
   try {
-    return await apiClient.post('/auth/change-password', { 
-      username, 
-      oldPassword, 
-      newPassword 
+    return await apiClient.post('/auth/change-password', {
+      username,
+      oldPassword,
+      newPassword,
     });
   } catch (error) {
     console.log('Password update failed - API not ready');
@@ -96,7 +120,6 @@ export async function updatePassword(username, oldPassword, newPassword) {
 }
 
 // ===== TEAM FAVORITES FUNCTIONS =====
-
 export async function addTeamToFavs(username, teamName) {
   try {
     return await apiClient.post('/favorites', { username, teamName });
@@ -136,7 +159,6 @@ export async function getAllFavTeamInfo(username) {
 }
 
 // ===== UTILITY FUNCTIONS =====
-
 export async function getAllTeams() {
   try {
     const result = await apiClient.get('/teams');
