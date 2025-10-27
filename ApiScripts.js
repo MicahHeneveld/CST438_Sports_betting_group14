@@ -11,10 +11,11 @@ console.log('🔧 API_BASE_URL:', API_BASE_URL);
 console.log('🔧 AUTH_BASE_URL:', AUTH_BASE_URL);
 const SESSION_KEY = '@user_session';
 
-// OAuth redirect URI for mobile
+// OAuth redirect URI for mobile - updated to match backend expectation
 import * as Linking from 'expo-linking';
 
-const REDIRECT_URI = Linking.createURL('login/oauth2/code/github');
+const REDIRECT_URI = 'exp://localhost:8081';
+console.log('🔧 REDIRECT_URI:', REDIRECT_URI);
 
 
 // Store user session data
@@ -53,36 +54,49 @@ export const clearSession = async () => {
 // OAuth login function
 export const loginWithOAuth = async (provider = 'google') => {
   try {
-    console.log('Opening OAuth login for:', provider);
+    console.log('🔐 Opening OAuth login for:', provider);
 
-    // Build OAuth login URL
-    const loginUrl = `${AUTH_BASE_URL}/oauth2/authorization/${provider}?redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
+    // Build OAuth login URL - backend expects redirect_uri parameter
+    const loginUrl = `${AUTH_BASE_URL}/oauth2/authorization/${provider}`;
 
-    console.log('Login URL:', loginUrl);
-    console.log('Redirect URI:', REDIRECT_URI);
+    console.log('🌐 Login URL:', loginUrl);
+    console.log('🔄 Redirect URI:', REDIRECT_URI);
 
-    // Open browser for OAuth
+    // Open browser for OAuth - backend will redirect to exp://localhost:8081
     const result = await WebBrowser.openAuthSessionAsync(loginUrl, REDIRECT_URI);
 
-    console.log('WebBrowser result:', result);
+    console.log('📱 WebBrowser result:', result);
 
  
     if (result.type === 'success' && result.url) {
-      // Extract token from URL
+      // Extract parameters from URL
       const urlParams = new URLSearchParams(result.url.split('?')[1]);
       const token = urlParams.get('token');
+      const name = urlParams.get('name');
+      const email = urlParams.get('email');
+      const avatar = urlParams.get('avatar');
+      const authenticated = urlParams.get('authenticated');
+
+      // Check if OAuth callback contains user data
+      if (authenticated === 'true' && (name || email)) {
+        console.log('✅ OAuth callback with user data:', { name, email, avatar });
+        const userData = { name, email, avatar };
+        await setSession(userData);
+        await AsyncStorage.setItem('username', email || name || 'oauth_user');
+        return true;
+      }
 
       if (token) {
         // Store token if found
-        console.log(' Received token:', token);
+        console.log('✅ Received token:', token);
         await AsyncStorage.setItem('access_token', token);
         await setSession({ token });
         return true;
       } else {
         // Fallback to cookie-based session
-        const authenticated = await checkAuthStatus();
-        if (authenticated) {
-          console.log(' Logged in with backend session (cookies)');
+        const authenticatedStatus = await checkAuthStatus();
+        if (authenticatedStatus) {
+          console.log('✅ Logged in with backend session (cookies)');
           return true;
         }
       }
