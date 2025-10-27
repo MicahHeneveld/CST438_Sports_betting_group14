@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Image,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { callTeams } from "../../ApiScripts";
 import {
   addTeamToFavs,
@@ -15,7 +16,6 @@ import {
   getFavTeamNames,
   logDatabaseContents,
 } from "../../database/db";
-import { useLocalSearchParams } from "expo-router";
 
 interface Team {
   id: string;
@@ -25,44 +25,55 @@ interface Team {
 }
 
 const FavoriteTeams = () => {
-  const { username } = useLocalSearchParams<{ username: string }>();
+  const [username, setUsername] = useState<string | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const initialize = async () => {
-      if (!username) return;
-
       setLoading(true);
       try {
+        //Get username from AsyncStorage 
+        const storedUser = await AsyncStorage.getItem("username");
+        if (storedUser) setUsername(storedUser);
+        else console.warn("⚠️ No username found in AsyncStorage");
+
         // Load user's favorite teams from local DB
-        const favTeams = await getFavTeamNames(username);
+        const favTeams = storedUser ? await getFavTeamNames(storedUser) : [];
         setSelectedTeams(favTeams || []);
 
-        // ✅ Fetch team data from backend
+        //Fetch all teams from backend
         const teamData = await callTeams();
+        console.log("✅ Teams fetched:", teamData.length);
+
         const formattedTeams = teamData.map((t: any) => ({
-          id: t.teamId.toString(),
-          name: t.teamName ?? "Unknown Team",
-          city: t.teamCity ?? "",
+          id: (t.teamId || t.id)?.toString(),
+          name: t.teamName || t.name || "Unknown Team",
+          city: t.teamCity || t.city || "",
           logo:
-            t.logo ||
-            `https://cdn.nba.com/logos/nba/${t.teamId}/primary/L/logo.svg`,
+            t.logo && t.logo.startsWith("http")
+              ? t.logo
+              : `https://cdn.nba.com/logos/nba/${t.teamId || t.id}/primary/L/logo.svg`,
         }));
 
         setTeams(formattedTeams);
       } catch (error) {
         console.error("Error initializing Favorite Teams:", error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     initialize();
-  }, [username]);
+  }, []);
 
+  // Toggle favorite
   const toggleTeamSelection = async (teamName: string) => {
-    if (!username) return;
+    if (!username) {
+      console.warn("⚠️ Cannot modify favorites — username missing");
+      return;
+    }
 
     let updatedTeams = [...selectedTeams];
 
@@ -78,12 +89,14 @@ const FavoriteTeams = () => {
     await logDatabaseContents();
   };
 
+  // ✅ Loading state
   if (loading) {
     return (
       <ActivityIndicator style={styles.loader} size="large" color="#0000ff" />
     );
   }
 
+  // ✅ Render teams
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Select Your Favorite Teams</Text>
@@ -116,6 +129,7 @@ const FavoriteTeams = () => {
   );
 };
 
+// ✅ Styles
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: "#fff" },
   title: { fontSize: 22, fontWeight: "bold", marginBottom: 10 },

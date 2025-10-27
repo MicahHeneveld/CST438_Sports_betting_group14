@@ -5,9 +5,7 @@ import * as Linking from 'expo-linking';
 // Initialize web browser for OAuth
 WebBrowser.maybeCompleteAuthSession();
 
-// ==============================
-// 🔧 Backend Configuration
-// ==============================
+
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://jump-ball-df460ee69b61.herokuapp.com/api';
 const AUTH_BASE_URL = process.env.EXPO_PUBLIC_API_URL?.replace('/api', '') || 'https://jump-ball-df460ee69b61.herokuapp.com';
 const SESSION_KEY = '@user_session';
@@ -48,9 +46,7 @@ export const clearSession = async () => {
   }
 };
 
-// ==============================
-// 🔐 OAuth Login
-// ==============================
+
 export const loginWithOAuth = async (provider = 'github') => {
   try {
     console.log('🔐 Opening OAuth login for:', provider);
@@ -71,21 +67,21 @@ export const loginWithOAuth = async (provider = 'github') => {
       const authenticated = urlParams.get('authenticated');
 
       if (authenticated === 'true' && (name || email)) {
-        console.log('✅ OAuth callback with user data:', { name, email, avatar });
+        console.log('OAuth callback with user data:', { name, email, avatar });
         const userData = { name, email, avatar };
         await setSession(userData);
         await AsyncStorage.setItem('username', email || name || 'oauth_user');
       }
 
       if (token) {
-        console.log('✅ Received token:', token);
+        console.log('Received token:', token);
         await AsyncStorage.setItem('access_token', token);
         await setSession({ token });
         return true;
       } else {
         const authenticatedStatus = await checkAuthStatus();
         if (authenticatedStatus) {
-          console.log('✅ Logged in with backend session (cookies)');
+          console.log('Logged in with backend session (cookies)');
           return true;
         }
       }
@@ -99,9 +95,7 @@ export const loginWithOAuth = async (provider = 'github') => {
   }
 };
 
-// ==============================
-// 👤 Authentication Check
-// ==============================
+
 export const checkAuthStatus = async () => {
   try {
     console.log(' Checking auth status...');
@@ -207,6 +201,8 @@ export const callTeams = async () => {
             ? nbaLogo
             : fallbackLogo, // generic logo for intl / missing teams
       };
+
+      
     });
   } catch (error) {
     console.error("Error fetching teams:", error);
