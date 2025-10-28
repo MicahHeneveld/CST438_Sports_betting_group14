@@ -7,159 +7,136 @@ import {
   ActivityIndicator,
   Image,
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { callGamesByDate } from "../../ApiScripts";
-//import { useNavigation, NavigationProp } from "@react-navigation/native";
-//import { RootStackParamList } from "../navagation/types";
-import { getAllFavTeamInfo, logDatabaseContents } from "../../database/db";
-//import { useFocusEffect } from "@react-navigation/native";
+import { callGames, callTeams } from "../../ApiScripts";
 import { useFocusEffect } from "expo-router";
 
 interface Game {
   id: string;
-  date: Date;
-  homeTeam: { name: string; nickname: string; logo: string };
-  awayTeam: { name: string; nickname: string; logo: string };
+  gameDate: string;
+  homeTeamId: number;
+  awayTeamId: number;
+  homeTeamScore: number;
+  awayTeamScore: number;
+}
+
+interface Team {
+  id: string;
+  name: string;
+  logo: string;
+  city: string;
 }
 
 const UpcomingGames = () => {
-  //const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [games, setGames] = useState<Game[]>([]);
+  const [teams, setTeams] = useState<Record<string, Team>>({});
   const [loading, setLoading] = useState<boolean>(true);
-  const [userName, setUserName] = useState<string | null>(null);
 
-  // Fetch username from AsyncStorage
-  useEffect(() => {
-    const fetchUserName = async () => {
-      const storedUserName = await AsyncStorage.getItem("username");
-      if (storedUserName) {
-        setUserName(storedUserName);
-        console.log("Fetched Username: ", storedUserName);
-      } else {
-        console.warn("⚠ No username found in AsyncStorage");
-      }
-    };
-    fetchUserName();
-  }, []);
-
-  // Reusable fetchGames function (Made Reusable for focus effect)
-  const fetchGames = useCallback(async () => {
-    if (!userName) return;
+  const fetchGamesAndTeams = useCallback(async () => {
     setLoading(true);
-
     try {
-      // Log the database contents after the update (Full check)
-      await logDatabaseContents();
+      console.log("Fetching teams and games...");
 
-      // Fetch favorite teams directly from the database using the username
-      const favTeams = await getAllFavTeamInfo(userName);
-      const favTeamNames = favTeams.map((team: any) => team[0]);
-      if (favTeamNames.length === 0) {
-        console.warn("No favorite teams found.");
-        setGames([]);
-        return;
-      }
+      // Fetch both datasets in parallel
+      const [gameData, teamData] = await Promise.all([callGames(), callTeams()]);
 
-      // Get current date and calculate the end date (14 days ahead)
+      // Map team IDs for quick lookup
+      const teamMap: Record<string, Team> = {};
+      teamData.forEach((team) => {
+        teamMap[team.id] = team;
+      });
+
+      // Only show games in next 14 days
       const currentDate = new Date();
-      const endDate = new Date(currentDate);
+      const endDate = new Date();
       endDate.setDate(currentDate.getDate() + 14);
 
-      const startDateString = currentDate.toISOString().split("T")[0]; // Format as YYYY-MM-DD
-      const endDateString = endDate.toISOString().split("T")[0]; // Format as YYYY-MM-DD
+      const filteredGames = gameData.filter((game) => {
+        const gameDate = new Date(game.gameDate);
+        return gameDate >= currentDate && gameDate <= endDate;
+      });
 
-      console.log(
-        "Fetching games from:",
-        startDateString,
-        "to:",
-        endDateString
+      // Sort by date
+      filteredGames.sort(
+        (a, b) => new Date(a.gameDate).getTime() - new Date(b.gameDate).getTime()
       );
- 
-      // Fetch games for each of the selected teams using callGamesByDate
-      let allGames: Game[] = [];
-      for (const teamID of favTeamNames) {
-        console.log(`📡 Fetching games for team: ${teamID}`);
-        const teamGames = await callGamesByDate(
-          startDateString,
-          endDateString,
-          teamID
-        );
 
-        if (teamGames.length === 0) {
-          console.warn(`No games found for team ${teamID}`);
-        } else {
-          allGames = [...allGames, ...teamGames];
-        }
-      }
-
-      if (allGames.length === 0) {
-        console.warn("No upcoming games found.");
-      }
-      setGames(allGames);
+      setTeams(teamMap);
+      setGames(filteredGames);
     } catch (error) {
-      console.error("Error fetching games:", error);
+      console.error("❌ Error fetching data:", error);
     } finally {
       setLoading(false);
     }
-  }, [userName]);
+  }, []);
 
-  // Fetch games whenever userName changes
   useEffect(() => {
-    fetchGames();
-  }, [userName, fetchGames]);
+    fetchGamesAndTeams();
+  }, [fetchGamesAndTeams]);
 
-  // This allows the view to update when doing tab navigation.
   useFocusEffect(
     useCallback(() => {
-      console.log("re-fetching games...");
-      fetchGames();
-    }, [fetchGames])
+      console.log("Refreshing Upcoming Games");
+      fetchGamesAndTeams();
+    }, [fetchGamesAndTeams])
   );
 
-  if (loading)
+  if (loading) {
     return (
       <ActivityIndicator style={styles.loader} size="large" color="#0000ff" />
     );
+  }
+
+  const renderGameItem = ({ item }: { item: Game }) => {
+    const homeTeam = teams[item.homeTeamId];
+    const awayTeam = teams[item.awayTeamId];
+
+    return (
+      <View style={styles.gameItem}>
+        <View style={styles.teamRow}>
+          {/* Away Team */}
+          <View style={styles.teamContainer}>
+            {awayTeam?.logo ? (
+              <Image source={{ uri: awayTeam.logo }} style={styles.logo} />
+            ) : (
+              <View style={styles.placeholderLogo} />
+            )}
+            <Text style={styles.teamName}>
+              {awayTeam?.name || `Team ${item.awayTeamId}`}
+            </Text>
+          </View>
+
+          <Text style={styles.vsText}>vs</Text>
+
+          {/* Home Team */}
+          <View style={styles.teamContainer}>
+            {homeTeam?.logo ? (
+              <Image source={{ uri: homeTeam.logo }} style={styles.logo} />
+            ) : (
+              <View style={styles.placeholderLogo} />
+            )}
+            <Text style={styles.teamName}>
+              {homeTeam?.name || `Team ${item.homeTeamId}`}
+            </Text>
+          </View>
+        </View>
+
+        <Text style={styles.dateText}>
+          {new Date(item.gameDate).toLocaleDateString()}
+        </Text>
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Upcoming Games for Your Teams</Text>
+      <Text style={styles.title}>Upcoming Games</Text>
       {games.length === 0 ? (
         <Text style={styles.errorText}>No upcoming games found.</Text>
       ) : (
         <FlatList
           data={games}
           keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => {
-            const isHomeTeam = item.homeTeam.name === "The home team from list";
-            const winRate = isHomeTeam ? 0.51 : 0.49;
-
-            return (
-              <View style={styles.gameItem}>
-                {/* Logos */}
-                <View style={styles.teamLogoContainer}>
-                  <Image
-                    source={{ uri: item.homeTeam.logo }}
-                    style={styles.teamLogo}
-                  />
-                  <Text style={styles.teamText}>
-                    {item.homeTeam.name} vs {item.awayTeam.name}
-                  </Text>
-                  <Image
-                    source={{ uri: item.awayTeam.logo }}
-                    style={styles.teamLogo}
-                  />
-                </View>
-
-                <Text style={styles.dateText}>
-                  {item.date.toLocaleDateString()}
-                </Text>
-                <Text style={styles.winRateText}>
-                  Win Rate: {winRate * 100}%
-                </Text>
-              </View>
-            );
-          }}
+          renderItem={renderGameItem}
         />
       )}
     </View>
@@ -167,58 +144,29 @@ const UpcomingGames = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: "#fff",
-  },
-  title: {
-    fontSize: 22, // Adjusted font size for better fit
-    fontWeight: "bold",
-    marginBottom: 12, // Reduced margin for better fit on smaller screens
-    textAlign: "center",
-  },
-  loader: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  errorText: {
-    fontSize: 16,
-    color: "red",
-    textAlign: "center",
-  },
+  container: { flex: 1, padding: 16, backgroundColor: "#fff" },
+  title: { fontSize: 22, fontWeight: "bold", marginBottom: 12, textAlign: "center" },
+  loader: { flex: 1, justifyContent: "center", alignItems: "center" },
+  errorText: { fontSize: 16, color: "red", textAlign: "center" },
   gameItem: {
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
-    marginBottom: 12,
+    borderBottomColor: "#ddd",
+    marginBottom: 10,
+    backgroundColor: "#f9f9f9",
+    borderRadius: 8,
   },
-  teamText: {
-    fontSize: 16, 
-    textAlign: "center", 
-  },
-  dateText: {
-    fontSize: 14, 
-    color: "#666",
-    textAlign: "center", 
-  },
-  winRateText: {
-    fontSize: 14, 
-    color: "#4CAF50",
-    marginTop: 6, 
-    textAlign: "center",
-  },
-  teamLogoContainer: {
+  teamRow: {
     flexDirection: "row",
+    justifyContent: "space-around",
     alignItems: "center",
-    justifyContent: "center", 
-    marginBottom: 8,  
   },
-  teamLogo: {
-    width: 30,
-    height: 30,
-    marginHorizontal: 8,
-  },
+  teamContainer: { alignItems: "center", flex: 1 },
+  logo: { width: 50, height: 50, resizeMode: "contain" },
+  placeholderLogo: { width: 50, height: 50, backgroundColor: "#ccc", borderRadius: 25 },
+  teamName: { fontSize: 14, fontWeight: "600", textAlign: "center", marginTop: 5 },
+  vsText: { fontSize: 16, fontWeight: "bold", marginHorizontal: 10 },
+  dateText: { fontSize: 14, color: "#666", textAlign: "center", marginTop: 6 },
 });
+
 export default UpcomingGames;

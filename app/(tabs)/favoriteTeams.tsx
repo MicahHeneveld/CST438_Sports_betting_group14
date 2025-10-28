@@ -8,89 +8,100 @@ import {
   ActivityIndicator,
   Image,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { callTeams } from "../../ApiScripts";
-//import { useRoute, RouteProp } from "@react-navigation/native";
-//import { RootStackParamList } from "../../navagation/types";
 import {
   addTeamToFavs,
   removeTeamFromFav,
   getFavTeamNames,
   logDatabaseContents,
 } from "../../database/db";
-import { useLocalSearchParams } from "expo-router";
 
 interface Team {
   id: string;
   name: string;
-  nickname: string;
+  city: string;
   logo: string;
 }
 
 const FavoriteTeams = () => {
-  //const route = useRoute<RouteProp<RootStackParamList, "favoriteTeams">>();
-  //const username = route.params?.username; // Get username from navigation params
-  const { username } = useLocalSearchParams<{ username: string }>();
+  const [username, setUsername] = useState<string | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const initialize = async () => {
-      if (!username) {
-        console.error("No username received via navigation");
-        return;
-      }
-
       setLoading(true);
-
       try {
-        const favTeams = await getFavTeamNames(username);
+        //Get username from AsyncStorage 
+        const storedUser = await AsyncStorage.getItem("username");
+        if (storedUser) setUsername(storedUser);
+        else console.warn("⚠️ No username found in AsyncStorage");
+
+        // Load user's favorite teams from local DB
+        const favTeams = storedUser ? await getFavTeamNames(storedUser) : [];
         setSelectedTeams(favTeams || []);
 
-        process.env.RAPIDAPI_KEY = "f48a5921f5msh580809ba8c9e6cfp181a8ajsn545d715d6844";
+        //Fetch all teams from backend
         const teamData = await callTeams();
+        console.log("✅ Teams fetched:", teamData.length);
 
-        if (teamData && teamData.length > 0) {
-          setTeams(teamData);
-        } else {
-          console.error("No teams received from API.");
-        }
+        const formattedTeams = teamData.map((t: any) => ({
+          id: (t.teamId || t.id)?.toString(),
+          name: t.teamName || t.name || "Unknown Team",
+          city: t.teamCity || t.city || "",
+          logo:
+            t.logo && t.logo.startsWith("http")
+              ? t.logo
+              : `https://cdn.nba.com/logos/nba/${t.teamId || t.id}/primary/L/logo.svg`,
+        }));
+
+        setTeams(formattedTeams);
       } catch (error) {
-        console.error("Error fetching teams:", error);
+        console.error("Error initializing Favorite Teams:", error);
+      } finally {
+        setLoading(false);
       }
-
-      setLoading(false);
     };
 
     initialize();
-  }, [username]);
+  }, []);
 
-  const toggleTeamSelection = async (team_name: string) => {
-    if (!username) return;
+  // Toggle favorite
+  const toggleTeamSelection = async (teamName: string) => {
+    if (!username) {
+      console.warn("⚠️ Cannot modify favorites — username missing");
+      return;
+    }
 
     let updatedTeams = [...selectedTeams];
 
-    if (updatedTeams.includes(team_name)) {
-      await removeTeamFromFav(username, team_name);
-      updatedTeams = updatedTeams.filter((name) => name !== team_name);
+    if (updatedTeams.includes(teamName)) {
+      await removeTeamFromFav(username, teamName);
+      updatedTeams = updatedTeams.filter((name) => name !== teamName);
     } else {
-      await addTeamToFavs(username, team_name);
-      updatedTeams.push(team_name);
+      await addTeamToFavs(username, teamName);
+      updatedTeams.push(teamName);
     }
 
     setSelectedTeams(updatedTeams);
     await logDatabaseContents();
   };
 
+  // ✅ Loading state
   if (loading) {
-    return <ActivityIndicator style={styles.loader} size="large" color="#0000ff" />;
+    return (
+      <ActivityIndicator style={styles.loader} size="large" color="#0000ff" />
+    );
   }
 
+  // ✅ Render teams
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Select Your Favorite Teams</Text>
       {teams.length === 0 ? (
-        <Text style={styles.errorText}>No teams available. Check API Key.</Text>
+        <Text style={styles.errorText}>No teams available. Check API.</Text>
       ) : (
         <FlatList
           data={teams}
@@ -105,7 +116,10 @@ const FavoriteTeams = () => {
             >
               <View style={styles.teamContainer}>
                 <Image source={{ uri: item.logo }} style={styles.logo} />
-                <Text style={styles.teamText}>{item.name}</Text>
+                <View>
+                  <Text style={styles.teamText}>{item.city}</Text>
+                  <Text style={styles.subText}>{item.name}</Text>
+                </View>
               </View>
             </TouchableOpacity>
           )}
@@ -115,27 +129,27 @@ const FavoriteTeams = () => {
   );
 };
 
+// ✅ Styles
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: "#fff" },
-  title: { fontSize: 20, fontWeight: "bold", marginBottom: 10 },
+  title: { fontSize: 22, fontWeight: "bold", marginBottom: 10 },
   loader: { flex: 1, justifyContent: "center", alignItems: "center" },
   errorText: { fontSize: 16, color: "red", textAlign: "center" },
   teamItem: {
-    padding: 15,
-    marginBottom: 5,
+    padding: 12,
+    marginBottom: 8,
     borderWidth: 1,
     borderColor: "#ddd",
-    borderRadius: 5,
+    borderRadius: 8,
     flexDirection: "row",
     alignItems: "center",
+    backgroundColor: "#f9f9f9",
   },
-  teamContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  logo: { width: 40, height: 40, marginRight: 10, resizeMode: "contain" },
+  teamContainer: { flexDirection: "row", alignItems: "center" },
+  logo: { width: 40, height: 40, marginRight: 12, resizeMode: "contain" },
   selectedTeam: { backgroundColor: "#87CEFA" },
-  teamText: { fontSize: 18 },
+  teamText: { fontSize: 16, fontWeight: "600" },
+  subText: { fontSize: 14, color: "#555" },
 });
 
 export default FavoriteTeams;
